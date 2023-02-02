@@ -49,10 +49,10 @@ def cycle(dataloader, start_iteration: int = 0):
 
 
 config = SimpleNamespace(    
-    run_name = "DDPM_conditional",
+    run_name = "sine_cond_50k",
     noise_steps=1000,
     seed = 42,
-    batch_size = 8,
+    batch_size = 16,
     img_size = 64,
     num_classes = 1000,
     dataset_path = r"/localtmp/as3ek/data/dot_circle/images/path_angle.json",
@@ -61,10 +61,11 @@ config = SimpleNamespace(
     use_wandb = True,
     do_validation = False,
     fp16 = True,
-    num_workers=2,
-    lr = 1e-4,
-    log_interval = 10,
-    num_steps = 10000,
+    num_workers=4,
+    lr = 3e-4,
+    log_interval = 50,
+    num_steps = 50000,
+    warmup_steps = 500,
 )
 
 
@@ -83,6 +84,7 @@ def parse_args(config):
     parser.add_argument('--slice_size', type=int, default=config.slice_size, help='slice size')
     parser.add_argument('--noise_steps', type=int, default=config.noise_steps, help='noise steps')
     parser.add_argument('--num_steps', type=int, default=config.num_steps, help='num training steps')
+    parser.add_argument('--warmup_steps', type=int, default=config.warmup_steps, help='num warmup steps')
     parser.add_argument('--log_interval', type=int, default=config.log_interval, help='num training steps')
     # parser.add_argument('--config', default='./configs/pretrain.yaml')
     # parser.add_argument('--output_dir', default='output/Pretrain')  
@@ -144,10 +146,10 @@ def main(config):
     mse = nn.MSELoss()
     scaler = torch.cuda.amp.GradScaler()
 
-    model_without_ddp = diffuser.model
+    # model_without_ddp = diffuser.model
     if config.distributed:
         model = torch.nn.parallel.DistributedDataParallel(diffuser.model, device_ids=[config.gpu])
-        model_without_ddp = model.module
+        # model_without_ddp = model.module
 
     # Start training
     diffuser.model.train()
@@ -155,6 +157,13 @@ def main(config):
     for iteration in range(start_iteration + 1, config.num_steps + 1):
         optimizer.zero_grad()
         batch = next(train_dataloader_iter)
+
+        if iteration <= config.warmup_steps:
+            warmup_lr_schedule(optimizer, iteration, config.warmup_steps, 0, config.lr)
+        
+        if iteration > config.warmup_steps:
+            cosine_lr_schedule(optimizer, iteration - config.warmup_steps, config.num_steps - config.warmup_steps, config.lr, config.lr/100.0)
+
         with torch.autocast("cuda") and torch.enable_grad():
             images = batch[0].to(device)
             labels = batch[2].to(device)
@@ -182,9 +191,11 @@ def main(config):
                         })
                         # diffuser.log_images(use_wandb=config.use_wandb)
 
-            torch.distributed.barrier()
-            
-    diffuser.save_model("first")
+                torch.distributed.barrier()
+
+    if utils.is_main_process():
+        diffuser.save_model(config.run_name, use_wandb=config.use_wandb)
+        diffuser.log_images(use_wandb=config.use_wandb)
 
 
 if __name__ == '__main__':

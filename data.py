@@ -9,7 +9,7 @@ from PIL import Image
 
 def get_circle_dot_data(args):
     train_transforms = torchvision.transforms.Compose([
-        T.Resize(args.img_size),  # args.img_size + 1/4 *args.img_size
+        T.Resize((args.img_size,args.img_size)),  # args.img_size + 1/4 *args.img_size
         # T.RandomResizedCrop(args.img_size, scale=(0.8, 1.0)),
         T.ToTensor(),
         T.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),

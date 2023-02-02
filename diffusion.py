@@ -111,9 +111,12 @@ class Diffusion:
 
     def save_model(self, run_name, use_wandb=False, epoch=-1):
         "Save model locally and on wandb"
-        torch.save(self.model.state_dict(), os.path.join("models", run_name, f"ckpt.pt"))
+        try:
+            torch.save(self.model.state_dict(), os.path.join("models", run_name, f"ckpt.pt"))
+        except:
+            torch.save(self.model.module.state_dict(), os.path.join("models", run_name, f"ckpt.pt"))
         torch.save(self.ema_model.state_dict(), os.path.join("models", run_name, f"ema_ckpt.pt"))
-        torch.save(self.optimizer.state_dict(), os.path.join("models", run_name, f"optim.pt"))
+        # torch.save(self.optimizer.state_dict(), os.path.join("models", run_name, f"optim.pt"))
         if use_wandb:
             at = wandb.Artifact("model", type="model", description="Model weights for DDPM conditional", metadata={"epoch": epoch})
             at.add_dir(os.path.join("models", run_name))

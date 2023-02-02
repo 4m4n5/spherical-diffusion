@@ -198,12 +198,16 @@ class UNet_conditional(UNet):
         super().__init__(c_in, c_out, time_dim)
         if num_classes is not None:
             self.label_emb = nn.Embedding(num_classes, time_dim)
+            self.num_classes = num_classes
 
     def forward(self, x, t, y=None):
         t = t.unsqueeze(-1)
         t = self.pos_encoding(t, self.time_dim)
 
         if y is not None:
-            t += self.label_emb(y)
+            y = y.unsqueeze(-1)
+            sine_y = torch.sin(y * torch.pi / self.num_classes)
+            # t += self.label_emb(y)
+            t += sine_y
 
         return self.unet_forwad(x, t)
