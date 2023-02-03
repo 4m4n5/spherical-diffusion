@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 wandb/
 models/
+data/
 results/
 # C extensions
 *.so

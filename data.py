@@ -7,7 +7,7 @@ import torchvision.transforms as T
 from PIL import Image
 
 
-def get_circle_dot_data(args):
+def get_data(args):
     train_transforms = torchvision.transforms.Compose([
         T.Resize((args.img_size,args.img_size)),  # args.img_size + 1/4 *args.img_size
         # T.RandomResizedCrop(args.img_size, scale=(0.8, 1.0)),
@@ -15,7 +15,10 @@ def get_circle_dot_data(args):
         T.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
     ])
 
-    train_dataset = CircleDotDataset(json_file=args.dataset_path, image_transform=train_transforms)
+    if args.data_type == "json":
+        train_dataset = CircleDotDataset(json_file=args.dataset_path, image_transform=train_transforms)
+    if args.data_type == "image_folder":
+        train_dataset = torchvision.datasets.ImageFolder(args.dataset_path, transform=train_transforms)
 
     return train_dataset
 
@@ -78,7 +81,7 @@ def create_loader(datasets, samplers, batch_size, num_workers, is_trains, collat
             num_workers=n_worker,
             pin_memory=True,
             sampler=sampler,
-            shuffle=shuffle,
+            shuffle=False,
             collate_fn=collate_fn,
             drop_last=drop_last,
         )              

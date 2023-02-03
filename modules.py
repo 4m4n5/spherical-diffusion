@@ -205,12 +205,12 @@ class UNet_conditional(UNet):
         t = self.pos_encoding(t, self.time_dim)
 
         if y is not None:
-            y = y.unsqueeze(-1)
-            cos_y = torch.cos(y * torch.pi / self.num_classes)
-            # sine_y = torch.sin(y * 0.5 * torch.pi / self.num_classes)
+            # y = y.unsqueeze(-1)
+            # cos_y = torch.cos(y * torch.pi / self.num_classes)
+            # # sine_y = torch.sin(y * 0.5 * torch.pi / self.num_classes)
             
-            # t += self.label_emb(y)
+            t += self.label_emb(y)
             # t += sine_y
-            t += cos_y
+            # t += cos_y
 
         return self.unet_forwad(x, t)
