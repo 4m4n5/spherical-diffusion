@@ -49,7 +49,7 @@ def cycle(dataloader, start_iteration: int = 0):
 
 
 config = SimpleNamespace(    
-    run_name = "sine_cond_50k",
+    run_name = "cos_cond_50k",
     noise_steps=1000,
     seed = 42,
     batch_size = 16,

@@ -206,8 +206,11 @@ class UNet_conditional(UNet):
 
         if y is not None:
             y = y.unsqueeze(-1)
-            sine_y = torch.sin(y * torch.pi / self.num_classes)
+            cos_y = torch.cos(y * torch.pi / self.num_classes)
+            # sine_y = torch.sin(y * 0.5 * torch.pi / self.num_classes)
+            
             # t += self.label_emb(y)
-            t += sine_y
+            # t += sine_y
+            t += cos_y
 
         return self.unet_forwad(x, t)
