@@ -128,9 +128,10 @@ class Up(nn.Module):
 
 
 class UNet(nn.Module):
-    def __init__(self, c_in=3, c_out=3, time_dim=256):
+    def __init__(self, c_in=3, c_out=3, time_dim=256, remove_deep_conv=False):
         super().__init__()
         self.time_dim = time_dim
+        self.remove_deep_conv = remove_deep_conv
         self.inc = DoubleConv(c_in, 64)
         self.down1 = Down(64, 128)
         self.sa1 = SelfAttention(128)
@@ -139,13 +140,14 @@ class UNet(nn.Module):
         self.down3 = Down(256, 256)
         self.sa3 = SelfAttention(256)
 
-        # self.bot1 = DoubleConv(256, 512)
-        # self.bot2 = DoubleConv(512, 512)
-        # self.bot3 = DoubleConv(512, 256)
 
-        self.bot1 = DoubleConv(256, 256)
-        # self.bot2 = DoubleConv(512, )
-        self.bot3 = DoubleConv(256, 256)
+        if remove_deep_conv:
+            self.bot1 = DoubleConv(256, 256)
+            self.bot3 = DoubleConv(256, 256)
+        else:
+            self.bot1 = DoubleConv(256, 512)
+            self.bot2 = DoubleConv(512, 512)
+            self.bot3 = DoubleConv(512, 256)
 
         self.up1 = Up(512, 128)
         self.sa4 = SelfAttention(128)
@@ -175,7 +177,8 @@ class UNet(nn.Module):
         x4 = self.sa3(x4)
 
         x4 = self.bot1(x4)
-        # x4 = self.bot2(x4)
+        if not self.remove_deep_conv:
+            x4 = self.bot2(x4)
         x4 = self.bot3(x4)
 
         x = self.up1(x4, x3, t)
@@ -194,23 +197,18 @@ class UNet(nn.Module):
 
 
 class UNet_conditional(UNet):
-    def __init__(self, c_in=3, c_out=3, time_dim=256, num_classes=None):
-        super().__init__(c_in, c_out, time_dim)
+    def __init__(self, c_in=3, c_out=3, time_dim=256, num_classes=None, **kwargs):
+        super().__init__(c_in, c_out, time_dim, **kwargs)
         if num_classes is not None:
-            self.label_emb = nn.Embedding(num_classes, time_dim)
-            self.num_classes = num_classes
+            # self.label_emb = nn.Embedding(num_classes, time_dim)
+            self.label_emb = nn.Linear(num_classes, time_dim)
 
     def forward(self, x, t, y=None):
+        # import ipdb; ipdb.set_trace()
         t = t.unsqueeze(-1)
         t = self.pos_encoding(t, self.time_dim)
 
         if y is not None:
-            # y = y.unsqueeze(-1)
-            # cos_y = torch.cos(y * torch.pi / self.num_classes)
-            # # sine_y = torch.sin(y * 0.5 * torch.pi / self.num_classes)
-            
             t += self.label_emb(y)
-            # t += sine_y
-            # t += cos_y
 
         return self.unet_forwad(x, t)

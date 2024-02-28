@@ -3,7 +3,7 @@ import copy
 import torch
 from fastprogress import progress_bar
 from utils import *
-from modules import UNet_conditional, UNet
+from modules import UNet_conditional
 import logging
 import wandb
 
@@ -18,13 +18,8 @@ class Diffusion:
         self.alpha_hat = torch.cumprod(self.alpha, dim=0)
 
         self.img_size = img_size
-        if num_classes is None or num_classes == 0:
-            self.model = UNet(c_in, c_out).to(device)
-        else:
-            self.model = UNet_conditional(c_in, c_out, num_classes=num_classes).to(device)
-
-
-        # self.ema_model = copy.deepcopy(self.model).eval().requires_grad_(False)
+        self.model = UNet_conditional(c_in, c_out, num_classes=num_classes).to(device)
+        self.ema_model = copy.deepcopy(self.model).eval().requires_grad_(False)
         self.device = device
         self.c_in = c_in
         self.num_classes = num_classes
@@ -65,7 +60,7 @@ class Diffusion:
                     noise = torch.zeros_like(x)
                 x = 1 / torch.sqrt(alpha) * (x - ((1 - alpha) / (torch.sqrt(1 - alpha_hat))) * predicted_noise) + torch.sqrt(beta) * noise
         x = (x.clamp(-1, 1) + 1) / 2
-        x = (x * 255).type(torch.uint8)
+
         return x
 
     # def train_step(self, loss):
@@ -100,32 +95,45 @@ class Diffusion:
     #         pbar.comment = f"MSE={loss.item():2.3f}"        
     #     return avg_loss.mean().item()
 
-    def log_images(self, use_wandb=False):
+    def log_images(self, cond, iteration=0, use_wandb=False):
         "Log images to wandb and save them to disk"
-        labels = torch.arange(self.num_classes // 100).long().to(self.device)
+        labels = cond.to(self.device)
         sampled_images = self.sample(use_ema=False, labels=labels)
-        ema_sampled_images = self.sample(use_ema=True, labels=labels)
-        plot_images(sampled_images)  #to display on jupyter if available
-        if use_wandb:
-            wandb.log({"sampled_images":     [wandb.Image(img.permute(1,2,0).squeeze().cpu().numpy()) for img in sampled_images]})
-            wandb.log({"ema_sampled_images": [wandb.Image(img.permute(1,2,0).squeeze().cpu().numpy()) for img in ema_sampled_images]})
+        # ema_sampled_images = self.sample(use_ema=True, labels=labels)
+        # plot_images(sampled_images)  #to display on jupyter if available
+        # if use_wandb:
+        #     wandb.log({"sampled_images":     [wandb.Image(img.permute(1,2,0).squeeze().cpu().numpy()) for img in sampled_images]})
+            # wandb.log({"ema_sampled_images": [wandb.Image(img.permute(1,2,0).squeeze().cpu().numpy()) for img in ema_sampled_images]})
 
-    def load(self, model_cpkt_path, model_ckpt="ckpt.pt", ema_model_ckpt="ema_ckpt.pt"):
-        self.model.load_state_dict(torch.load(os.path.join(model_cpkt_path, model_ckpt)))
-        self.ema_model.load_state_dict(torch.load(os.path.join(model_cpkt_path, ema_model_ckpt)))
+        import ipdb; ipdb.set_trace()
+        torch.save(sampled_images, f"/scratch/as3ek/spherical-diffusion/results/sample_{iteration}.pt")
+        # torch.save(ema_sampled_images, f"/scratch/as3ek/spherical-diffusion/results/ema_sample_{iteration}.pt")
 
-    def save_model(self, run_name, use_wandb=False, epoch=-1):
+    def load(self, model_cpkt_path, ema_model_ckpt_path):
+        self.model.load_state_dict(torch.load(model_cpkt_path))
+        self.ema_model.load_state_dict(torch.load(ema_model_ckpt_path))
+
+    def save_model(self, run_name, optimizer, iteration, use_wandb=False, epoch=-1):
         "Save model locally and on wandb"
         try:
-            torch.save(self.model.state_dict(), os.path.join("models", run_name, f"ckpt.pt"))
+            torch.save(self.model.state_dict(), os.path.join("models", run_name, f"ckpt_{iteration}.pt"))
         except:
-            torch.save(self.model.module.state_dict(), os.path.join("models", run_name, f"ckpt.pt"))
-        # torch.save(self.ema_model.state_dict(), os.path.join("models", run_name, f"ema_ckpt.pt"))
-        # torch.save(self.optimizer.state_dict(), os.path.join("models", run_name, f"optim.pt"))
-        if use_wandb:
-            at = wandb.Artifact("model", type="model", description="Model weights for DDPM conditional", metadata={"epoch": epoch})
-            at.add_dir(os.path.join("models", run_name))
-            wandb.log_artifact(at)
+            torch.save(self.model.module.state_dict(), os.path.join("models", run_name, f"ckpt_{iteration}.pt"))
+        
+        try:
+            torch.save(self.ema_model.state_dict(), os.path.join("models", run_name, f"ema_ckpt_{iteration}.pt"))
+        except:
+            torch.save(self.ema_model.module.state_dict(), os.path.join("models", run_name, f"ema_ckpt_{iteration}.pt"))
+
+        try:
+            torch.save(optimizer.state_dict(), os.path.join("models", run_name, f"optimizer_ckpt_{iteration}.pt"))
+        except:
+            torch.save(optimizer.module.state_dict(), os.path.join("models", run_name, f"optimizer_ckpt_{iteration}.pt"))
+        
+        # if use_wandb:
+        #     at = wandb.Artifact("model", type="model", description="Model weights for DDPM conditional", metadata={"epoch": epoch})
+        #     at.add_dir(os.path.join("models", run_name))
+        #     wandb.log_artifact(at)
 
     # def prepare(self, args):
     #     mk_folders(args.run_name)
