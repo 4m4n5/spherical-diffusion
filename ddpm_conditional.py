@@ -63,7 +63,7 @@ config = SimpleNamespace(
     run_name = "mask_gen",
     noise_steps=1000,
     seed = 42,
-    batch_size = 4,
+    batch_size = 2,
     img_size = 128,
     num_classes = 7,
     c_in = 7,
@@ -75,10 +75,10 @@ config = SimpleNamespace(
     do_validation = False,
     fp16 = True,
     num_workers=4,
-    lr = 3e-4,
+    lr = 1e-4,
     log_interval = 200,
     save_interval = 2000,
-    num_steps = 50000,
+    num_steps = 100000,
     warmup_steps = 500,
     is_train = True,
 )
@@ -184,8 +184,8 @@ def main(config):
         if iteration <= config.warmup_steps:
             warmup_lr_schedule(optimizer, iteration, config.warmup_steps, 0, config.lr)
         
-        if iteration > config.warmup_steps:
-            cosine_lr_schedule(optimizer, iteration - config.warmup_steps, config.num_steps - config.warmup_steps, config.lr, config.lr/100.0)
+        # if iteration > config.warmup_steps:
+        #     cosine_lr_schedule(optimizer, iteration - config.warmup_steps, config.num_steps - config.warmup_steps, config.lr, config.lr/100.0)
 
         with torch.autocast("cuda") and torch.enable_grad():
             masks = batch.to(device)
