@@ -69,15 +69,13 @@ config = SimpleNamespace(
     seed = 42,
     batch_size = 16,
     img_size = 64,
-    num_classes = 2,
-    data_type = "image_folder", # "image_folder" or "json"
-    dataset_path = r"/u/as3ek/github/spherical-diffusion/data/chest_xray/train",
+    num_classes = None,
+    data_type = "json", # "image_folder" or "json"
+    dataset_path = r"/localtmp/as3ek/data/dot_circle/images/path_angle.json",
     device = "cuda",
     slice_size = 1,
     use_wandb = True,
-    do_validation = False,
-    fp16 = False,
-    num_workers=10,
+    num_workers=8,
     lr = 3e-4,
     log_interval = 50,
     num_steps = 50000,
@@ -158,7 +156,7 @@ def main(config):
     #### Model ####
     print("Creating model") 
     diffuser = Diffusion(config.noise_steps, img_size=config.img_size, num_classes=config.num_classes)
-    ema = EMA(0.995)
+    # ema = EMA(0.995)
     
     mk_folders(config.run_name)
     
@@ -169,10 +167,11 @@ def main(config):
     diffuser.model = diffuser.model.cuda()
     # Convert BatchNorm to SyncBatchNorm. 
     diffuser.model = nn.SyncBatchNorm.convert_sync_batchnorm(diffuser.model)
+    # diffuser.ema_model = nn.SyncBatchNorm.convert_sync_batchnorm(diffuser.ema_model)
 
     # model_without_ddp = diffuser.model
     if config.distributed:
-        diffuser.model = torch.nn.parallel.DistributedDataParallel(diffuser.model, device_ids=[config.gpu])
+        diffuser.model = torch.nn.parallel.DistributedDataParallel(diffuser.model, device_ids=[config.gpu], find_unused_parameters=True)
         # model_without_ddp = model.module
 
     # Start training
@@ -189,14 +188,9 @@ def main(config):
             cosine_lr_schedule(optimizer, iteration - config.warmup_steps, config.num_steps - config.warmup_steps, config.lr, config.lr/100.0)
 
         # with torch.autocast("cuda") and torch.enable_grad():
-        if config.data_type == "json":
-            images = batch[0].cuda(non_blocking=True)
-            labels = batch[2].cuda(non_blocking=True)
-
-        elif config.data_type == "image_folder":
-            images = batch[0].cuda(non_blocking=True)
-            labels = batch[-1].cuda(non_blocking=True)
-
+        images = batch[0].cuda(non_blocking=True)
+        labels = batch[-1].cuda(non_blocking=True)
+        
         t = diffuser.sample_timesteps(images.shape[0]).cuda(non_blocking=True)
         x_t, noise = diffuser.noise_images(images, t)
 
@@ -204,7 +198,11 @@ def main(config):
         if np.random.random() < 0.1:
             labels = None
         
-        predicted_noise = diffuser.model(x_t, t, labels)
+        if (config.num_classes is not None) and (config.num_classes != 0):
+            predicted_noise = diffuser.model(x_t, t, labels)
+        else:
+            predicted_noise = diffuser.model(x_t, t)
+
         loss = mse(noise, predicted_noise)
         avg_loss += loss
         
@@ -212,7 +210,7 @@ def main(config):
         scaler.scale(loss).backward()
         scaler.step(optimizer)
         scaler.update()
-        ema.step_ema(diffuser.ema_model, diffuser.model)
+        # ema.step_ema(diffuser.ema_model, diffuser.model)
 
         if iteration % config.log_interval == 0:
             if config.use_wandb:

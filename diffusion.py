@@ -3,7 +3,7 @@ import copy
 import torch
 from fastprogress import progress_bar
 from utils import *
-from modules import UNet_conditional
+from modules import UNet_conditional, UNet
 import logging
 import wandb
 
@@ -18,8 +18,13 @@ class Diffusion:
         self.alpha_hat = torch.cumprod(self.alpha, dim=0)
 
         self.img_size = img_size
-        self.model = UNet_conditional(c_in, c_out, num_classes=num_classes).to(device)
-        self.ema_model = copy.deepcopy(self.model).eval().requires_grad_(False)
+        if num_classes is None or num_classes == 0:
+            self.model = UNet(c_in, c_out).to(device)
+        else:
+            self.model = UNet_conditional(c_in, c_out, num_classes=num_classes).to(device)
+
+
+        # self.ema_model = copy.deepcopy(self.model).eval().requires_grad_(False)
         self.device = device
         self.c_in = c_in
         self.num_classes = num_classes
@@ -115,7 +120,7 @@ class Diffusion:
             torch.save(self.model.state_dict(), os.path.join("models", run_name, f"ckpt.pt"))
         except:
             torch.save(self.model.module.state_dict(), os.path.join("models", run_name, f"ckpt.pt"))
-        torch.save(self.ema_model.state_dict(), os.path.join("models", run_name, f"ema_ckpt.pt"))
+        # torch.save(self.ema_model.state_dict(), os.path.join("models", run_name, f"ema_ckpt.pt"))
         # torch.save(self.optimizer.state_dict(), os.path.join("models", run_name, f"optim.pt"))
         if use_wandb:
             at = wandb.Artifact("model", type="model", description="Model weights for DDPM conditional", metadata={"epoch": epoch})
