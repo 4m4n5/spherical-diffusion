@@ -105,13 +105,14 @@ class Diffusion:
         #     wandb.log({"sampled_images":     [wandb.Image(img.permute(1,2,0).squeeze().cpu().numpy()) for img in sampled_images]})
             # wandb.log({"ema_sampled_images": [wandb.Image(img.permute(1,2,0).squeeze().cpu().numpy()) for img in ema_sampled_images]})
 
-        import ipdb; ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
         torch.save(sampled_images, f"/scratch/as3ek/spherical-diffusion/results/sample_{iteration}.pt")
         # torch.save(ema_sampled_images, f"/scratch/as3ek/spherical-diffusion/results/ema_sample_{iteration}.pt")
 
-    def load(self, model_cpkt_path, ema_model_ckpt_path):
+    def load(self, model_cpkt_path, ema_model_ckpt_path=""):
         self.model.load_state_dict(torch.load(model_cpkt_path))
-        self.ema_model.load_state_dict(torch.load(ema_model_ckpt_path))
+        if ema_model_ckpt_path != "":
+            self.ema_model.load_state_dict(torch.load(ema_model_ckpt_path))
 
     def save_model(self, run_name, optimizer, iteration, use_wandb=False, epoch=-1):
         "Save model locally and on wandb"

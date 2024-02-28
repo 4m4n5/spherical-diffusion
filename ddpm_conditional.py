@@ -107,8 +107,8 @@ def parse_args(config):
     parser.add_argument('--c_out', type=int, default=config.c_out, help='c_out')
     # parser.add_argument('--config', default='./configs/pretrain.yaml')
     # parser.add_argument('--output_dir', default='output/Pretrain')  
-    parser.add_argument('--checkpoint', default='/scratch/as3ek/spherical-diffusion/models/mask_gen/ckpt_42000.pt')
-    parser.add_argument('--ema_checkpoint', default='/scratch/as3ek/spherical-diffusion/models/mask_gen/ema_ckpt_42000.pt')
+    parser.add_argument('--checkpoint', default='')
+    parser.add_argument('--ema_checkpoint', default='')
 
     # Distributed training parameters    
     parser.add_argument('--device', default='cuda')
@@ -157,7 +157,7 @@ def main(config):
     #### Model ####
     print("Creating model") 
     diffuser = Diffusion(config.noise_steps, img_size=config.img_size, num_classes=config.num_classes, c_in=config.c_in, c_out=config.c_out)
-    ema = EMA(0.995)
+    # ema = EMA(0.995)
     
     mk_folders(config.run_name)
     
@@ -167,7 +167,7 @@ def main(config):
 
     # Load checkpoint
     if config.checkpoint != '':
-        diffuser.load(config.checkpoint, config.ema_checkpoint)
+        diffuser.load(config.checkpoint)
 
     # model_without_ddp = diffuser.model
     if config.distributed:
@@ -190,8 +190,6 @@ def main(config):
         with torch.autocast("cuda") and torch.enable_grad():
             masks = batch.to(device)
 
-            # import ipdb; ipdb.set_trace()
-
             pmask, cond = process_input_mask(masks, device)
             pmask = 2.0 * pmask - 1.0
 
@@ -213,7 +211,7 @@ def main(config):
                 scaler.scale(loss).backward()
                 scaler.step(optimizer)
                 scaler.update()
-                ema.step_ema(diffuser.ema_model, diffuser.model)
+                # ema.step_ema(diffuser.ema_model, diffuser.model)
 
                 if iteration % config.log_interval == 0:
                     if config.use_wandb:
