@@ -185,6 +185,7 @@ def main(config):
         print('Resuming training from iteration %d'%start_iteration)
 
     # Start training
+    print("Start training")
     diffuser.model.train()
     avg_loss = 0
     for iteration in range(start_iteration + 1, config.num_steps + 1):
@@ -226,6 +227,7 @@ def main(config):
                 if iteration % config.log_interval == 0:
                     if config.use_wandb:
                         if utils.is_main_process():
+                            print('iteration: %d, loss: %.4f, learning_rate: %.4f'%(iteration, loss.item(), optimizer.param_groups[0]['lr']))
                             wandb.log({
                                 "loss": loss.item(),
                                 "learning_rate": optimizer.param_groups[0]['lr'], 
