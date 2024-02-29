@@ -173,6 +173,7 @@ def main(config):
         diffuser.load(model_cpkt_path=config.resume)
         start_iteration = int(config.resume.split('/')[-1].split('.')[0].split('_')[-1])
         optimizer.load_state_dict(torch.load(config.resume.replace('ckpt', 'optimizer_ckpt')))
+        print('Resuming training from iteration %d'%start_iteration)
 
 
     # Load checkpoint
