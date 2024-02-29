@@ -111,7 +111,7 @@ def parse_args(config):
     parser.add_argument('--checkpoint', default='')
     parser.add_argument('--ema_checkpoint', default='')
 
-    parser.add_argument('--resume', default=args.resume)
+    parser.add_argument('--resume', default=config.resume)
 
     # Distributed training parameters    
     parser.add_argument('--device', default='cuda')
