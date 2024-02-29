@@ -116,6 +116,7 @@ class Diffusion:
 
     def save_model(self, run_name, optimizer, iteration, use_wandb=False, epoch=-1):
         "Save model locally and on wandb"
+        import ipdb; ipdb.set_trace()
         try:
             torch.save(self.model.state_dict(), os.path.join("outputs", run_name, f"ckpt_{iteration}.pt"))
         except:
