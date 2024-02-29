@@ -195,7 +195,8 @@ def main(config):
         if iteration <= config.warmup_steps:
             warmup_lr_schedule(optimizer, iteration, config.warmup_steps, 0, config.lr)
         
-        # if iteration > config.warmup_steps:
+        if iteration > config.warmup_steps:
+            const_lr_schedule(optimizer, config.lr)
         #     cosine_lr_schedule(optimizer, iteration - config.warmup_steps, config.num_steps - config.warmup_steps, config.lr, config.lr/100.0)
 
         with torch.autocast("cuda") and torch.enable_grad():
