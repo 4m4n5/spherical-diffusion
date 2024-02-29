@@ -77,7 +77,7 @@ config = SimpleNamespace(
     num_workers=4,
     lr = 2e-4,
     log_interval = 200,
-    save_interval = 2000,
+    save_interval = 5000,
     num_steps = 100000,
     warmup_steps = 500,
     is_train = True,
@@ -148,7 +148,7 @@ def main(config):
     data_loader = create_loader(
         datasets, 
         samplers, 
-        batch_size=[config.batch_size], num_workers=[config.num_workers], is_trains=[True], collate_fns=[None]
+        batch_size=[config.batch_size], num_workers=[config.num_workers], is_trains=[config.is_train], collate_fns=[None]
     )[0]
 
     start_iteration = 0

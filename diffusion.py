@@ -117,19 +117,19 @@ class Diffusion:
     def save_model(self, run_name, optimizer, iteration, use_wandb=False, epoch=-1):
         "Save model locally and on wandb"
         try:
-            torch.save(self.model.state_dict(), os.path.join("models", run_name, f"ckpt_{iteration}.pt"))
+            torch.save(self.model.state_dict(), os.path.join("outputs", run_name, f"ckpt_{iteration}.pt"))
         except:
-            torch.save(self.model.module.state_dict(), os.path.join("models", run_name, f"ckpt_{iteration}.pt"))
+            torch.save(self.model.module.state_dict(), os.path.join("outputs", run_name, f"ckpt_{iteration}.pt"))
         
-        try:
-            torch.save(self.ema_model.state_dict(), os.path.join("models", run_name, f"ema_ckpt_{iteration}.pt"))
-        except:
-            torch.save(self.ema_model.module.state_dict(), os.path.join("models", run_name, f"ema_ckpt_{iteration}.pt"))
+        # try:
+        #     torch.save(self.ema_model.state_dict(), os.path.join("outputs", run_name, f"ema_ckpt_{iteration}.pt"))
+        # except:
+        #     torch.save(self.ema_model.module.state_dict(), os.path.join("outputs", run_name, f"ema_ckpt_{iteration}.pt"))
 
         try:
-            torch.save(optimizer.state_dict(), os.path.join("models", run_name, f"optimizer_ckpt_{iteration}.pt"))
+            torch.save(optimizer.state_dict(), os.path.join("outputs", run_name, f"optimizer_ckpt_{iteration}.pt"))
         except:
-            torch.save(optimizer.module.state_dict(), os.path.join("models", run_name, f"optimizer_ckpt_{iteration}.pt"))
+            torch.save(optimizer.module.state_dict(), os.path.join("outputs", run_name, f"optimizer_ckpt_{iteration}.pt"))
         
         # if use_wandb:
         #     at = wandb.Artifact("model", type="model", description="Model weights for DDPM conditional", metadata={"epoch": epoch})
