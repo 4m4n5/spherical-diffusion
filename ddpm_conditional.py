@@ -69,13 +69,14 @@ config = SimpleNamespace(
     c_in = 7,
     c_out = 7,
     dataset_path = r"/home/as3ek/data/lizard_split_norm_bright3/",
+    resume = "/scratch/as3ek/projects/github/spherical-diffusion/outputs/mask_gen/ckpt_20000.pt",
     device = "cuda",
     slice_size = 1,
     use_wandb = True,
     do_validation = False,
     fp16 = True,
     num_workers=4,
-    lr = 2e-4,
+    lr = 1e-4,
     log_interval = 200,
     save_interval = 5000,
     num_steps = 100000,
@@ -109,6 +110,8 @@ def parse_args(config):
     # parser.add_argument('--output_dir', default='output/Pretrain')  
     parser.add_argument('--checkpoint', default='')
     parser.add_argument('--ema_checkpoint', default='')
+
+    parser.add_argument('--resume', default=args.resume)
 
     # Distributed training parameters    
     parser.add_argument('--device', default='cuda')
@@ -164,6 +167,13 @@ def main(config):
     optimizer = optim.AdamW(diffuser.model.parameters(), lr=config.lr, weight_decay=0.001)
     mse = nn.MSELoss()
     scaler = torch.cuda.amp.GradScaler()
+
+    # Resume training
+    if config.resume != '':
+        diffuser.load(model_cpkt_path=config.resume)
+        start_iteration = int(config.resume.split('/')[-1].split('.')[0].split('_')[-1])
+        optimizer.load_state_dict(torch.load(config.resume.replace('ckpt', 'optimizer_ckpt')))
+
 
     # Load checkpoint
     if config.checkpoint != '':
