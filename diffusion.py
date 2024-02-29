@@ -110,7 +110,7 @@ class Diffusion:
         # torch.save(ema_sampled_images, f"/scratch/as3ek/spherical-diffusion/results/ema_sample_{iteration}.pt")
 
     def load(self, model_cpkt_path, ema_model_ckpt_path=""):
-        self.model.load_state_dict(torch.load(model_cpkt_path, map_location='cpu'))
+        self.model.load_state_dict(torch.load(model_cpkt_path))
         if ema_model_ckpt_path != "":
             self.ema_model.load_state_dict(torch.load(ema_model_ckpt_path))
 

@@ -168,14 +168,6 @@ def main(config):
     mse = nn.MSELoss()
     scaler = torch.cuda.amp.GradScaler()
 
-    # Resume training
-    if config.resume != '':
-        diffuser.load(model_cpkt_path=config.resume)
-        start_iteration = int(config.resume.split('/')[-1].split('.')[0].split('_')[-1])
-        optimizer.load_state_dict(torch.load(config.resume.replace('ckpt', 'optimizer_ckpt')))
-        print('Resuming training from iteration %d'%start_iteration)
-
-
     # Load checkpoint
     if config.checkpoint != '':
         diffuser.load(config.checkpoint)
@@ -184,6 +176,13 @@ def main(config):
     if config.distributed:
         model = torch.nn.parallel.DistributedDataParallel(diffuser.model, device_ids=[config.gpu])
         # model_without_ddp = model.module
+
+    # Resume training
+    if config.resume != '':
+        diffuser.load(model_cpkt_path=config.resume)
+        start_iteration = int(config.resume.split('/')[-1].split('.')[0].split('_')[-1])
+        optimizer.load_state_dict(torch.load(config.resume.replace('ckpt', 'optimizer_ckpt')))
+        print('Resuming training from iteration %d'%start_iteration)
 
     # Start training
     diffuser.model.train()
