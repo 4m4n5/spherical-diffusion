@@ -63,13 +63,14 @@ config = SimpleNamespace(
     run_name = "mask_gen",
     noise_steps=1000,
     seed = 42,
-    batch_size = 2,
+    batch_size = 8,
     img_size = 128,
     num_classes = 7,
     c_in = 7,
     c_out = 7,
     dataset_path = r"/home/as3ek/data/lizard_split_norm_bright3/",
-    resume = "/scratch/as3ek/projects/github/spherical-diffusion/outputs/mask_gen/ckpt_100000.pt",
+    resume = "",
+    checkpoint = "projects/github/spherical-diffusion/outputs/mask_gen/ckpt_140000.pt",
     device = "cuda",
     slice_size = 1,
     use_wandb = True,
@@ -210,7 +211,7 @@ def main(config):
 
             if config.checkpoint != '':
                 if utils.is_main_process():
-                    diffuser.log_images(cond=cond, iteration=iteration)
+                    diffuser.log_images(run_name=config.run_name, cond=cond, iteration=iteration)
             else:
                 if np.random.random() < 0.1:
                     cond = None

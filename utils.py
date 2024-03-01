@@ -41,10 +41,9 @@ def save_images(images, path, **kwargs):
 
 
 def mk_folders(run_name):
-    os.makedirs("models", exist_ok=True)
-    os.makedirs("results", exist_ok=True)
-    os.makedirs(os.path.join("models", run_name), exist_ok=True)
-    os.makedirs(os.path.join("results", run_name), exist_ok=True)
+    os.makedirs("outputs", exist_ok=True)
+    os.makedirs(os.path.join("outputs", run_name), exist_ok=True)
+    os.makedirs(os.path.join("outputs", run_name, "samples"), exist_ok=True)
 
 
 ##### BLIP Inspired UTILS #####

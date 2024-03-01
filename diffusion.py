@@ -95,7 +95,7 @@ class Diffusion:
     #         pbar.comment = f"MSE={loss.item():2.3f}"        
     #     return avg_loss.mean().item()
 
-    def log_images(self, cond, iteration=0, use_wandb=False):
+    def log_images(self, run_name, cond, iteration=0, use_wandb=False):
         "Log images to wandb and save them to disk"
         labels = cond.to(self.device)
         sampled_images = self.sample(use_ema=False, labels=labels)
@@ -106,7 +106,12 @@ class Diffusion:
             # wandb.log({"ema_sampled_images": [wandb.Image(img.permute(1,2,0).squeeze().cpu().numpy()) for img in ema_sampled_images]})
 
         # import ipdb; ipdb.set_trace()
-        torch.save(sampled_images, f"/scratch/as3ek/spherical-diffusion/results/sample_{iteration}.pt")
+        savepath_sample = os.path.join("outputs", run_name, "samples", f"sample_{iteration}.pt")
+        torch.save(sampled_images, savepath_sample)
+
+        savepath_cond = os.path.join("outputs", run_name, "samples", f"cond_{iteration}.pt")
+        torch.save(cond, savepath_cond)
+        
         # torch.save(ema_sampled_images, f"/scratch/as3ek/spherical-diffusion/results/ema_sample_{iteration}.pt")
 
     def load(self, model_cpkt_path, ema_model_ckpt_path=""):
