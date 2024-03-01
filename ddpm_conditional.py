@@ -109,7 +109,7 @@ def parse_args(config):
     parser.add_argument('--c_out', type=int, default=config.c_out, help='c_out')
     # parser.add_argument('--config', default='./configs/pretrain.yaml')
     # parser.add_argument('--output_dir', default='output/Pretrain')  
-    parser.add_argument('--checkpoint', default='')
+    parser.add_argument('--checkpoint', default=config.checkpoint)
     parser.add_argument('--ema_checkpoint', default='')
 
     parser.add_argument('--resume', default=config.resume)
